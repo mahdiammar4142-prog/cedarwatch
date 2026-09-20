@@ -1,0 +1,32 @@
+# Python
+backend/.venv/
+.venv/
+backend/__pycache__/
+**/__pycache__/
+*.pyc
+.pytest_cache/
+
+# Node
+node_modules/
+frontend/node_modules/
+frontend/dist/
+
+# Env (keep .env.example files)
+.env
+.env*.local
+backend/.env
+frontend/.env
+
+# IDE / OS
+.idea
+.vscode
+.DS_Store
+
+# Logs
+*.log
+npm-debug.log*
+
+# Next.js leftovers (if any)
+/.next/
+/out/
+*.tsbuildinfo
