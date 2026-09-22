@@ -3,13 +3,13 @@ export function gpsErrorMessage(error?: GeolocationPositionError | null) {
     const httpsUrl = `https://${window.location.host}/map`;
     return `Phones block GPS on http://. Open ${httpsUrl}, tap Advanced → Proceed, allow location, then try again.`;
   }
-  if (error?.code === error.PERMISSION_DENIED) {
+  if (error?.code === 1) {
     return "Location permission was denied. Allow location for this site in your phone browser settings.";
   }
-  if (error?.code === error.POSITION_UNAVAILABLE) {
+  if (error?.code === 2) {
     return "GPS is unavailable right now. Turn on location services and try again, or tap the map.";
   }
-  if (error?.code === error.TIMEOUT) {
+  if (error?.code === 3) {
     return "Location timed out. Move near a window and try again, or tap the map.";
   }
   return "Could not get your location. Tap the map to drop a pin instead.";
@@ -29,8 +29,8 @@ export function getCurrentLocation(): Promise<{ lat: number; lng: number }> {
       (pos) => {
         resolve({ lat: pos.coords.latitude, lng: pos.coords.longitude });
       },
-      (error) => {
-        reject(new Error(gpsErrorMessage(error)));
+      (err) => {
+        reject(new Error(gpsErrorMessage(err)));
       },
       {
         enableHighAccuracy: true,
