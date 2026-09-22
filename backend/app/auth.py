@@ -2,6 +2,7 @@ from dataclasses import dataclass
 import json
 import os
 import threading
+import urllib.error
 import urllib.request
 
 import jwt
@@ -42,12 +43,21 @@ def _load_jwks() -> dict:
     if not base:
         raise InvalidTokenError("Supabase URL is not configured")
     jwks_url = f"{base}/auth/v1/.well-known/jwks.json"
-    request = urllib.request.Request(
-        jwks_url,
-        headers={"Accept": "application/json", "User-Agent": "cedarwatch-api"},
-    )
-    with urllib.request.urlopen(request, timeout=10) as response:
-        payload = json.loads(response.read().decode("utf-8"))
+    headers = {"Accept": "application/json", "User-Agent": "cedarwatch-api"}
+    anon = (
+        os.environ.get("SUPABASE_ANON_KEY")
+        or os.environ.get("VITE_SUPABASE_ANON_KEY")
+        or ""
+    ).strip()
+    if anon:
+        headers["apikey"] = anon
+        headers["Authorization"] = f"Bearer {anon}"
+    request = urllib.request.Request(jwks_url, headers=headers)
+    try:
+        with urllib.request.urlopen(request, timeout=10) as response:
+            payload = json.loads(response.read().decode("utf-8"))
+    except urllib.error.HTTPError as exc:
+        raise InvalidTokenError(f"JWKS HTTP {exc.code} for {jwks_url}") from exc
     if not isinstance(payload, dict) or not payload.get("keys"):
         raise InvalidTokenError("Supabase JWKS was empty")
     _jwks_cache = payload
@@ -60,7 +70,7 @@ def warmup_jwks() -> str:
             keys = _load_jwks().get("keys", [])
         return f"ok:{len(keys)}"
     except Exception as exc:
-        return f"error:{type(exc).__name__}"
+        return f"error:{exc}"
 
 
 def _decode_token(token: str) -> dict:
