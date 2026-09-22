@@ -1,5 +1,6 @@
 from dataclasses import dataclass
 from functools import lru_cache
+import threading
 
 import jwt
 from fastapi import Depends, HTTPException
@@ -9,6 +10,7 @@ from jwt import InvalidTokenError, PyJWKClient
 from app.config import settings
 
 bearer = HTTPBearer(auto_error=False)
+_jwks_lock = threading.Lock()
 
 
 @dataclass
@@ -22,21 +24,22 @@ def _jwks_client() -> PyJWKClient | None:
     if not settings.supabase_url:
         return None
     url = f"{settings.supabase_url.rstrip('/')}/auth/v1/.well-known/jwks.json"
-    return PyJWKClient(url, cache_keys=True)
+    return PyJWKClient(url, cache_keys=True, timeout=10)
 
 
 def _decode_token(token: str) -> dict:
     jwks = _jwks_client()
     if jwks is not None:
         try:
-            signing_key = jwks.get_signing_key_from_jwt(token)
+            with _jwks_lock:
+                signing_key = jwks.get_signing_key_from_jwt(token)
             return jwt.decode(
                 token,
                 signing_key.key,
                 algorithms=["ES256", "RS256"],
                 audience="authenticated",
             )
-        except InvalidTokenError:
+        except (InvalidTokenError, TimeoutError, OSError, Exception):
             pass
 
     if settings.supabase_jwt_secret and not settings.supabase_jwt_secret.startswith(
@@ -77,7 +80,7 @@ def get_optional_user(
         return None
     try:
         payload = _decode_token(credentials.credentials)
-    except InvalidTokenError:
+    except Exception:
         return None
     user_id = payload.get("sub")
     if not isinstance(user_id, str) or not user_id:
