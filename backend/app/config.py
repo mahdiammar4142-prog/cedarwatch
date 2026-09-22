@@ -15,9 +15,10 @@ class Settings(BaseSettings):
         "postgresql+psycopg://cedarwatch:cedarwatch@localhost:5432/cedarwatch"
     )
     agent_api_key: str = "cedarwatch-dev-agent-key"
-    cors_origins: str = "http://localhost:5173"
+    cors_origins: str = "http://localhost:5173,https://localhost:5173,http://127.0.0.1:5173,https://127.0.0.1:5173"
     supabase_url: str = ""
     supabase_jwt_secret: str = ""
+    admin_emails: str = "admin@gmail.com"
 
 
 settings = Settings()

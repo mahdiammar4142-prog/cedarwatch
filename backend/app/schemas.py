@@ -23,6 +23,9 @@ class ReportCreate(CamelModel):
     type: OutageType
     latitude: float
     longitude: float
+    governorate: str
+    district: str
+    municipality: str | None = None
     area: str | None = None
     description: str | None = None
 
@@ -40,6 +43,9 @@ class IncidentOut(CamelModel):
     latitude: float
     longitude: float
     area: str | None
+    governorate: str | None = None
+    district: str | None = None
+    municipality: str | None = None
     confidence: ConfidenceLevel
     status: IncidentStatus
     report_count: int
@@ -48,6 +54,7 @@ class IncidentOut(CamelModel):
     started_at: datetime
     resolved_at: datetime | None
     updated_at: datetime | None = None
+    can_resolve: bool = False
 
 
 class ReportOut(CamelModel):
@@ -56,6 +63,9 @@ class ReportOut(CamelModel):
     latitude: float
     longitude: float
     area: str | None
+    governorate: str | None = None
+    district: str | None = None
+    municipality: str | None = None
     description: str | None
     created_at: datetime
     user_id: str | None = None
@@ -106,6 +116,84 @@ class DashboardStats(CamelModel):
 class MeOut(CamelModel):
     id: str
     email: str | None
+    display_name: str | None = None
+    area: str | None = None
+    bio: str | None = None
+    avatar_url: str | None = None
+    is_admin: bool = False
+
+
+class MeUpdate(CamelModel):
+    display_name: str | None = None
+    area: str | None = None
+    bio: str | None = None
+
+
+class ReportUpdate(CamelModel):
+    type: OutageType | None = None
+    latitude: float | None = None
+    longitude: float | None = None
+    governorate: str | None = None
+    district: str | None = None
+    municipality: str | None = None
+    area: str | None = None
+    description: str | None = None
+
+
+class IncidentAdminUpdate(CamelModel):
+    type: OutageType | None = None
+    latitude: float | None = None
+    longitude: float | None = None
+    area: str | None = None
+    status: IncidentStatus | None = None
+    confidence: ConfidenceLevel | None = None
+
+
+class AdminUserOut(CamelModel):
+    id: str
+    email: str | None = None
+    display_name: str | None = None
+    area: str | None = None
+    bio: str | None = None
+    avatar_url: str | None = None
+    is_admin: bool = False
+    report_count: int = 0
+    confirmation_count: int = 0
+    updated_at: datetime | None = None
+    bootstrap_admin: bool = False
+
+
+class AdminUserUpdate(CamelModel):
+    display_name: str | None = None
+    area: str | None = None
+    bio: str | None = None
+    is_admin: bool | None = None
+
+
+class AdminReportOut(CamelModel):
+    id: int
+    type: OutageType
+    latitude: float
+    longitude: float
+    area: str | None
+    governorate: str | None = None
+    district: str | None = None
+    municipality: str | None = None
+    description: str | None
+    created_at: datetime
+    user_id: str | None = None
+    reporter_email: str | None = None
+    reporter_name: str | None = None
+    incident_id: int | None
+    confirmation_count: int = 0
+
+
+class AdminOverview(CamelModel):
+    users: int
+    reports: int
+    active_incidents: int
+    resolved_incidents: int
+    admins: int
 
 
 class AreaReliability(CamelModel):

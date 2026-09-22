@@ -1,11 +1,13 @@
 from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, selectinload
 
 from app.auth import CurrentUser, get_current_user
 from app.database import get_db
 from app.geo import is_in_lebanon
 from app.incidents import process_new_report, refresh_incident_confidence
-from app.models import Confirmation, Report
+from app.places import is_valid_place
+from app.models import Confirmation, Incident, Report
+from app.routers.incidents import to_incident_out
 from app.schemas import ConfirmationOut, ReportCreate, ReportCreated, ReportOut
 
 router = APIRouter(prefix="/api/reports", tags=["reports"])
@@ -24,11 +26,16 @@ def create_report(
 ):
     if not is_in_lebanon(payload.latitude, payload.longitude):
         raise HTTPException(status_code=400, detail="Location must be within Lebanon")
+    if not is_valid_place(payload.governorate, payload.district):
+        raise HTTPException(status_code=400, detail="Choose a valid governorate and district")
 
     report = Report(
         type=payload.type,
         latitude=payload.latitude,
         longitude=payload.longitude,
+        governorate=payload.governorate.strip(),
+        district=payload.district.strip(),
+        municipality=payload.municipality.strip() if payload.municipality else None,
         area=payload.area.strip() if payload.area else None,
         description=payload.description.strip() if payload.description else None,
         user_id=user.id,
@@ -37,7 +44,13 @@ def create_report(
     db.flush()
     incident = process_new_report(db, report)
     db.refresh(report)
-    return {"report": report, "incident": incident}
+    incident = (
+        db.query(Incident)
+        .options(selectinload(Incident.reports))
+        .filter(Incident.id == incident.id)
+        .first()
+    )
+    return {"report": report, "incident": to_incident_out(incident, user)}
 
 
 @router.post("/{report_id}/confirm", response_model=ConfirmationOut, status_code=201)

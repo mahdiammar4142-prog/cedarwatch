@@ -1,13 +1,13 @@
-from fastapi import Depends, FastAPI
+from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 
-from app.auth import CurrentUser, get_current_user
 from app.config import settings
 from app.database import Base, engine
 from app.migrate import ensure_auth_columns
-from app.models import Agent, AgentCheck, Confirmation, Incident, Report  # noqa: F401
-from app.routers import agent, history, incidents, reports, stats
-from app.schemas import MeOut
+from app.models import Agent, AgentCheck, Confirmation, Incident, Profile, Report  # noqa: F401
+from app.routers import admin, agent, history, incidents, profiles, reports, stats
+from app.storage import UPLOADS_DIR
 
 Base.metadata.create_all(bind=engine)
 ensure_auth_columns()
@@ -31,13 +31,12 @@ app.include_router(incidents.router)
 app.include_router(stats.router)
 app.include_router(history.router)
 app.include_router(agent.router)
+app.include_router(profiles.router)
+app.include_router(admin.router)
+
+app.mount("/uploads", StaticFiles(directory=str(UPLOADS_DIR)), name="uploads")
 
 
 @app.get("/api/health")
 def health():
     return {"status": "ok"}
-
-
-@app.get("/api/me", response_model=MeOut)
-def me(user: CurrentUser = Depends(get_current_user)):
-    return MeOut(id=user.id, email=user.email)

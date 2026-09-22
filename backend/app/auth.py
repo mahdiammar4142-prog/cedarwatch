@@ -55,22 +55,32 @@ def _decode_token(token: str) -> dict:
 def get_current_user(
     credentials: HTTPAuthorizationCredentials | None = Depends(bearer),
 ) -> CurrentUser:
-    if not settings.supabase_url and not settings.supabase_jwt_secret:
-        raise HTTPException(
-            status_code=503,
-            detail="Supabase auth is not configured. Set SUPABASE_URL.",
-        )
-    if credentials is None:
-        raise HTTPException(status_code=401, detail="Sign in required")
+    user = get_optional_user(credentials)
+    if user is None:
+        if credentials is None:
+            if not settings.supabase_url and not settings.supabase_jwt_secret:
+                raise HTTPException(
+                    status_code=503,
+                    detail="Supabase auth is not configured. Set SUPABASE_URL.",
+                )
+            raise HTTPException(status_code=401, detail="Sign in required")
+        raise HTTPException(status_code=401, detail="Invalid or expired session")
+    return user
 
+
+def get_optional_user(
+    credentials: HTTPAuthorizationCredentials | None = Depends(bearer),
+) -> CurrentUser | None:
+    if credentials is None:
+        return None
+    if not settings.supabase_url and not settings.supabase_jwt_secret:
+        return None
     try:
         payload = _decode_token(credentials.credentials)
-    except InvalidTokenError as exc:
-        raise HTTPException(status_code=401, detail="Invalid or expired session") from exc
-
+    except InvalidTokenError:
+        return None
     user_id = payload.get("sub")
     if not isinstance(user_id, str) or not user_id:
-        raise HTTPException(status_code=401, detail="Invalid token")
-
+        return None
     email = payload.get("email")
     return CurrentUser(id=user_id, email=email if isinstance(email, str) else None)

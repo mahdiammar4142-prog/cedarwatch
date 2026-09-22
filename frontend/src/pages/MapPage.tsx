@@ -21,7 +21,7 @@ export default function MapPage() {
     const data = (await api.getIncidents()) as Incident[];
     setIncidents(data);
     setLoading(false);
-  }, []);
+  }, [user]);
 
   useEffect(() => {
     fetchIncidents().catch(() => setLoading(false));
@@ -44,11 +44,13 @@ export default function MapPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-[var(--cedar-dark)]">Live outage map</h1>
-        <p className="mt-1 text-slate-600">
-          Click the map to set a location, then submit a report. Marker size
-          reflects report volume; color reflects confidence. Use EN / العربية on
-          the map to switch place names.
+        <p className="stamp text-[var(--cedar-green)]">Pin it</p>
+        <h1 className="font-display mt-2 text-3xl text-[var(--cedar-dark)] sm:text-4xl">
+          Live outage map
+        </h1>
+        <p className="mt-2 max-w-2xl text-sm text-stone-600 sm:text-base">
+          Tap the map, then file a report. Switch EN / العربية for place names.
+          Only a reporter of that outage can mark Service is back.
         </p>
       </div>
 
@@ -66,7 +68,7 @@ export default function MapPage() {
           onLocationSelect={(lat, lng) => setSelectedPosition({ lat, lng })}
         />
         <div>
-          <h2 className="mb-4 text-lg font-semibold text-[var(--cedar-dark)]">
+          <h2 className="font-display mb-4 text-2xl text-[var(--cedar-dark)]">
             Active incidents
             {!loading && (
               <span className="ml-2 text-sm font-normal text-slate-500">
@@ -87,11 +89,11 @@ export default function MapPage() {
               {!user && (
                 <p className="mt-3 text-sm text-slate-600">
                   <Link
-                    to="/login"
+                    to="/"
                     state={{ from: "/map" }}
                     className="font-medium text-[var(--cedar-green)] hover:underline"
                   >
-                    Sign in
+                    Come on watch
                   </Link>{" "}
                   to confirm an outage.
                 </p>

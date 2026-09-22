@@ -58,6 +58,9 @@ def attach_report_to_incident(db: Session, report: Report, incident: Incident) -
         report_count, confirmation_count, incident.agent_failure_count
     )
     incident.area = incident.area or report.area
+    incident.governorate = incident.governorate or report.governorate
+    incident.district = incident.district or report.district
+    incident.municipality = incident.municipality or report.municipality
     points = [(r.latitude, r.longitude) for r in incident.reports] + [
         (report.latitude, report.longitude)
     ]
@@ -73,6 +76,9 @@ def create_incident_from_report(db: Session, report: Report) -> Incident:
         latitude=report.latitude,
         longitude=report.longitude,
         area=report.area,
+        governorate=report.governorate,
+        district=report.district,
+        municipality=report.municipality,
         report_count=1,
         confirmation_count=0,
         confidence=ConfidenceLevel.UNVERIFIED,
@@ -98,6 +104,26 @@ def refresh_incident_confidence(db: Session, incident: Incident) -> Incident:
     incident.confidence = calculate_confidence(
         incident.report_count, confirmation_count, incident.agent_failure_count
     )
+    db.commit()
+    db.refresh(incident)
+    return incident
+
+
+def recount_incident(db: Session, incident: Incident) -> Incident | None:
+    reports = (
+        db.query(Report).filter(Report.incident_id == incident.id).all()
+    )
+    if not reports:
+        db.delete(incident)
+        db.commit()
+        return None
+    incident.report_count = len(reports)
+    incident.confirmation_count = _confirmation_count(db, incident)
+    incident.confidence = calculate_confidence(
+        incident.report_count, incident.confirmation_count, incident.agent_failure_count
+    )
+    points = [(r.latitude, r.longitude) for r in reports]
+    incident.latitude, incident.longitude = _centroid(points)
     db.commit()
     db.refresh(incident)
     return incident

@@ -2,8 +2,10 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import type { OutageType } from "../types";
 import { LEBANON_CENTER, OUTAGE_LABELS } from "../lib/constants";
+import { GOVERNORATES, LEBANON_PLACES } from "../lib/places";
 import { api } from "../lib/api";
 import { useAuth } from "../lib/auth";
+import { getCurrentLocation } from "../lib/geo";
 
 const OUTAGE_TYPES: OutageType[] = ["ELECTRICITY", "INTERNET", "WATER"];
 
@@ -24,9 +26,13 @@ export function ReportForm({
   const [type, setType] = useState<OutageType>("ELECTRICITY");
   const [latitude, setLatitude] = useState(defaultLat.toFixed(5));
   const [longitude, setLongitude] = useState(defaultLng.toFixed(5));
+  const [governorate, setGovernorate] = useState("");
+  const [district, setDistrict] = useState("");
+  const [municipality, setMunicipality] = useState("");
   const [area, setArea] = useState("");
   const [description, setDescription] = useState("");
   const [loading, setLoading] = useState(false);
+  const [locating, setLocating] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -45,6 +51,9 @@ export function ReportForm({
         type,
         latitude: parseFloat(latitude),
         longitude: parseFloat(longitude),
+        governorate,
+        district,
+        municipality: municipality || undefined,
         area: area || undefined,
         description: description || undefined,
       });
@@ -58,44 +67,37 @@ export function ReportForm({
     }
   }
 
-  function useMyLocation() {
-    if (!navigator.geolocation) {
-      setError("Geolocation is not supported by your browser");
-      return;
+  async function useMyLocation() {
+    setError(null);
+    setLocating(true);
+    try {
+      const { lat, lng } = await getCurrentLocation();
+      setLatitude(lat.toFixed(5));
+      setLongitude(lng.toFixed(5));
+      onLocationSelect?.(lat, lng);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Could not get your location");
+    } finally {
+      setLocating(false);
     }
-    navigator.geolocation.getCurrentPosition(
-      (pos) => {
-        const lat = pos.coords.latitude;
-        const lng = pos.coords.longitude;
-        setLatitude(lat.toFixed(5));
-        setLongitude(lng.toFixed(5));
-        setError(null);
-        onLocationSelect?.(lat, lng);
-      },
-      () => setError("Could not get your location")
-    );
   }
 
   return (
     <form
       onSubmit={handleSubmit}
-      className="space-y-4 rounded-xl border border-emerald-900/10 bg-white p-5 shadow-sm"
+      className="space-y-4 panel p-4 sm:p-5"
     >
       <div>
-        <h2 className="text-lg font-semibold text-[var(--cedar-dark)]">
-          Report an outage
+        <h2 className="font-display text-2xl text-[var(--cedar-dark)]">
+          File a field report
         </h2>
         <p className="mt-1 text-sm text-slate-600">
           Share what you&apos;re experiencing in your area.
         </p>
         {!user && (
           <p className="mt-3 rounded-lg bg-amber-50 px-3 py-2 text-sm text-amber-800">
-            <Link to="/login" state={{ from: "/map" }} className="font-medium underline">
-              Sign in
-            </Link>{" "}
-            or{" "}
-            <Link to="/signup" state={{ from: "/map" }} className="font-medium underline">
-              create an account
+            <Link to="/" state={{ from: "/map" }} className="font-medium underline">
+              Come on watch
             </Link>{" "}
             to submit a report.
           </p>
@@ -110,7 +112,7 @@ export function ReportForm({
               key={t}
               type="button"
               onClick={() => setType(t)}
-              className={`rounded-lg border px-3 py-2 text-sm transition ${
+              className={`min-h-11 rounded-lg border px-1.5 py-2 text-xs transition sm:px-3 sm:text-sm ${
                 type === t
                   ? "border-[var(--cedar-green)] bg-emerald-50 font-medium text-[var(--cedar-dark)]"
                   : "border-slate-200 hover:border-slate-300"
@@ -122,16 +124,74 @@ export function ReportForm({
         </div>
       </div>
 
+      <div className="grid gap-3 sm:grid-cols-2">
+        <div>
+          <label htmlFor="governorate" className="mb-1 block text-sm font-medium">
+            Governorate
+          </label>
+          <select
+            id="governorate"
+            required
+            value={governorate}
+            onChange={(e) => {
+              setGovernorate(e.target.value);
+              setDistrict("");
+            }}
+            className="field"
+          >
+            <option value="">Select governorate</option>
+            {GOVERNORATES.map((name) => (
+              <option key={name} value={name}>
+                {name}
+              </option>
+            ))}
+          </select>
+        </div>
+        <div>
+          <label htmlFor="district" className="mb-1 block text-sm font-medium">
+            District
+          </label>
+          <select
+            id="district"
+            required
+            value={district}
+            onChange={(e) => setDistrict(e.target.value)}
+            disabled={!governorate}
+            className="field"
+          >
+            <option value="">Select district</option>
+            {(LEBANON_PLACES[governorate] ?? []).map((name) => (
+              <option key={name} value={name}>
+                {name}
+              </option>
+            ))}
+          </select>
+        </div>
+      </div>
+
+      <div>
+        <label htmlFor="municipality" className="mb-1 block text-sm font-medium">
+          Municipality / town
+        </label>
+        <input
+          id="municipality"
+          value={municipality}
+          onChange={(e) => setMunicipality(e.target.value)}
+          placeholder="e.g. Bourj Hammoud"
+          className="field"
+        />
+      </div>
+
       <div>
         <label htmlFor="area" className="mb-1 block text-sm font-medium">
-          Area / neighborhood
+          Neighborhood
         </label>
         <input
           id="area"
           value={area}
           onChange={(e) => setArea(e.target.value)}
-          placeholder="e.g. Hamra, Beirut"
-          className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-[var(--cedar-green)] focus:outline-none focus:ring-1 focus:ring-[var(--cedar-green)]"
+          placeholder="e.g. Hamra"
+          className="field"
         />
       </div>
 
@@ -145,7 +205,7 @@ export function ReportForm({
             value={latitude}
             onChange={(e) => setLatitude(e.target.value)}
             required
-            className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-[var(--cedar-green)] focus:outline-none focus:ring-1 focus:ring-[var(--cedar-green)]"
+            className="field"
           />
         </div>
         <div>
@@ -157,17 +217,18 @@ export function ReportForm({
             value={longitude}
             onChange={(e) => setLongitude(e.target.value)}
             required
-            className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-[var(--cedar-green)] focus:outline-none focus:ring-1 focus:ring-[var(--cedar-green)]"
+            className="field"
           />
         </div>
       </div>
 
       <button
         type="button"
-        onClick={useMyLocation}
-        className="text-sm font-medium text-[var(--cedar-green)] hover:underline"
+        onClick={() => void useMyLocation()}
+        disabled={locating}
+        className="min-h-11 w-full rounded-full border border-[var(--cedar-green)] px-3 py-2 text-sm font-medium text-[var(--cedar-green)] disabled:opacity-60"
       >
-        Use my current location
+        {locating ? "Finding you..." : "Use my current location"}
       </button>
 
       <div>
@@ -180,7 +241,7 @@ export function ReportForm({
           onChange={(e) => setDescription(e.target.value)}
           rows={3}
           placeholder="Power went out around 3 PM, still down..."
-          className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-[var(--cedar-green)] focus:outline-none focus:ring-1 focus:ring-[var(--cedar-green)]"
+          className="field"
         />
       </div>
 
@@ -196,7 +257,7 @@ export function ReportForm({
       <button
         type="submit"
         disabled={loading || !user}
-        className="w-full rounded-lg bg-[var(--cedar-green)] px-4 py-2.5 text-sm font-medium text-white transition hover:bg-[var(--cedar-green-light)] disabled:opacity-60"
+        className="btn-primary w-full disabled:opacity-60"
       >
         {loading ? "Submitting..." : "Submit report"}
       </button>

@@ -12,11 +12,11 @@ export function HistoryOverviewView({ data }: { data: HistoryOverview }) {
         <StatCard label="Resolved in last 7 days" value={data.resolvedLast7Days} />
       </div>
 
-      <section className="rounded-xl border border-emerald-900/10 bg-white p-5 shadow-sm">
-        <h2 className="font-semibold text-[var(--cedar-dark)]">
+      <section className="panel p-5">
+        <h2 className="font-display text-xl text-[var(--cedar-dark)]">
           New incidents (14 days)
         </h2>
-        <div className="mt-4 flex h-36 items-end gap-1">
+        <div className="mt-4 flex h-32 items-end gap-0.5 overflow-x-auto sm:h-36 sm:gap-1">
           {data.trends.map((point) => (
             <div key={point.date} className="flex flex-1 flex-col items-center gap-1">
               <div
@@ -32,8 +32,8 @@ export function HistoryOverviewView({ data }: { data: HistoryOverview }) {
         </div>
       </section>
 
-      <section className="rounded-xl border border-emerald-900/10 bg-white p-5 shadow-sm">
-        <h2 className="font-semibold text-[var(--cedar-dark)]">
+      <section className="panel p-5">
+        <h2 className="font-display text-xl text-[var(--cedar-dark)]">
           Reliability by area
         </h2>
         <p className="mt-1 text-sm text-slate-600">
@@ -43,25 +43,57 @@ export function HistoryOverviewView({ data }: { data: HistoryOverview }) {
         {data.byArea.length === 0 ? (
           <p className="mt-4 text-sm text-slate-500">No area data yet.</p>
         ) : (
-          <div className="mt-4 overflow-x-auto">
-            <table className="w-full min-w-[640px] text-left text-sm">
-              <thead className="text-xs uppercase text-slate-500">
-                <tr>
-                  <th className="pb-2 font-medium">Area</th>
-                  <th className="pb-2 font-medium">Score</th>
-                  <th className="pb-2 font-medium">Active</th>
-                  <th className="pb-2 font-medium">Total</th>
-                  <th className="pb-2 font-medium">Avg hours</th>
-                  <th className="pb-2 font-medium">Types</th>
-                </tr>
-              </thead>
-              <tbody>
-                {data.byArea.map((row) => (
-                  <AreaRow key={row.area} row={row} />
-                ))}
-              </tbody>
-            </table>
-          </div>
+          <>
+            <div className="mt-4 space-y-3 md:hidden">
+              {data.byArea.map((row) => (
+                <div
+                  key={row.area}
+                  className="rounded-lg bg-slate-50 p-3 text-sm"
+                >
+                  <div className="flex items-center justify-between gap-2">
+                    <p className="font-medium text-[var(--cedar-dark)]">{row.area}</p>
+                    <span
+                      className={`rounded-full px-2 py-0.5 text-xs font-semibold ${
+                        row.reliabilityScore >= 80
+                          ? "bg-emerald-50 text-emerald-800"
+                          : row.reliabilityScore >= 50
+                            ? "bg-amber-50 text-amber-800"
+                            : "bg-red-50 text-red-800"
+                      }`}
+                    >
+                      {row.reliabilityScore}
+                    </span>
+                  </div>
+                  <p className="mt-2 text-xs text-slate-600">
+                    Active {row.activeIncidents} · Total {row.totalIncidents} · Avg{" "}
+                    {row.avgDurationHours == null ? "—" : `${row.avgDurationHours}h`}
+                  </p>
+                  <p className="mt-1 text-xs text-slate-500">
+                    ⚡{row.electricity} · 🌐{row.internet} · 💧{row.water}
+                  </p>
+                </div>
+              ))}
+            </div>
+            <div className="mt-4 hidden overflow-x-auto md:block">
+              <table className="w-full min-w-[640px] text-left text-sm">
+                <thead className="text-xs uppercase text-slate-500">
+                  <tr>
+                    <th className="pb-2 font-medium">Area</th>
+                    <th className="pb-2 font-medium">Score</th>
+                    <th className="pb-2 font-medium">Active</th>
+                    <th className="pb-2 font-medium">Total</th>
+                    <th className="pb-2 font-medium">Avg hours</th>
+                    <th className="pb-2 font-medium">Types</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {data.byArea.map((row) => (
+                    <AreaRow key={row.area} row={row} />
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </>
         )}
       </section>
 
@@ -118,7 +150,7 @@ function HistoryList({ incidents }: { incidents: Incident[] }) {
       {incidents.map((incident) => (
         <article
           key={incident.id}
-          className="rounded-xl border border-emerald-900/10 bg-white p-4 shadow-sm"
+          className="ticket p-4"
         >
           <div className="flex flex-wrap items-center gap-2">
             <OutageTypeBadge type={incident.type} />
@@ -150,7 +182,7 @@ function HistoryList({ incidents }: { incidents: Incident[] }) {
 
 function StatCard({ label, value }: { label: string; value: number }) {
   return (
-    <div className="rounded-xl border border-emerald-900/10 bg-white p-5 shadow-sm">
+    <div className="ticket px-5 py-5">
       <p className="text-sm text-slate-600">{label}</p>
       <p className="mt-1 text-3xl font-bold text-[var(--cedar-dark)]">{value}</p>
     </div>

@@ -8,6 +8,9 @@ export interface Incident {
   latitude: number;
   longitude: number;
   area: string | null;
+  governorate?: string | null;
+  district?: string | null;
+  municipality?: string | null;
   confidence: ConfidenceLevel;
   status: IncidentStatus;
   reportCount: number;
@@ -15,6 +18,7 @@ export interface Incident {
   agentFailureCount: number;
   startedAt: string;
   resolvedAt: string | null;
+  canResolve?: boolean;
 }
 
 export interface DashboardStats {
@@ -48,4 +52,54 @@ export interface HistoryOverview {
   recentIncidents: Incident[];
   byArea: AreaReliability[];
   trends: TrendPoint[];
+}
+
+export interface Profile {
+  id: string;
+  email: string | null;
+  displayName: string | null;
+  area: string | null;
+  bio: string | null;
+  avatarUrl: string | null;
+  isAdmin?: boolean;
+}
+
+export interface AdminUser {
+  id: string;
+  email: string | null;
+  displayName: string | null;
+  area: string | null;
+  bio: string | null;
+  avatarUrl: string | null;
+  isAdmin: boolean;
+  reportCount: number;
+  confirmationCount: number;
+  updatedAt: string | null;
+  bootstrapAdmin: boolean;
+}
+
+export interface AdminReport {
+  id: number;
+  type: OutageType;
+  latitude: number;
+  longitude: number;
+  area: string | null;
+  governorate?: string | null;
+  district?: string | null;
+  municipality?: string | null;
+  description: string | null;
+  createdAt: string;
+  userId: string | null;
+  reporterEmail: string | null;
+  reporterName: string | null;
+  incidentId: number | null;
+  confirmationCount: number;
+}
+
+export interface AdminOverview {
+  users: number;
+  reports: number;
+  activeIncidents: number;
+  resolvedIncidents: number;
+  admins: number;
 }

@@ -1,10 +1,6 @@
 import { Navigate } from "react-router-dom";
-import { AuthForm } from "../components/AuthForm";
-import { useAuth } from "../lib/auth";
 
+/** Old /signup bookmark — create-account is a toggle on the same gate. */
 export default function SignupPage() {
-  const { user, loading } = useAuth();
-  if (loading) return <p className="text-slate-500">Loading...</p>;
-  if (user) return <Navigate to="/map" replace />;
-  return <AuthForm mode="signup" />;
+  return <Navigate to="/" replace />;
 }

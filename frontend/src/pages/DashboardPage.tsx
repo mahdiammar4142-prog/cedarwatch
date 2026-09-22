@@ -36,35 +36,34 @@ export default function DashboardPage() {
 
   return (
     <div className="space-y-8">
-      <section className="rounded-2xl bg-[var(--cedar-dark)] px-6 py-8 text-white sm:px-8">
-        <p className="text-sm font-medium text-emerald-300">
-          Lebanon Infrastructure Monitoring
+      <section className="relative overflow-hidden rounded-[1.75rem] bg-[var(--cedar-dark)] px-5 py-8 text-[#fff8e7] sm:px-10 sm:py-12">
+        <div className="pointer-events-none absolute -right-10 -top-16 h-56 w-56 rounded-full bg-[#d4a017]/20 blur-2xl" />
+        <div className="pointer-events-none absolute -bottom-20 left-10 h-48 w-48 rounded-full bg-emerald-500/20 blur-2xl" />
+        <p className="stamp text-[#d4a017]">Lebanon · live grid</p>
+        <p className="font-arabic mt-3 text-xl text-[#d4a017]/80" dir="rtl" lang="ar">
+          من رأى انطفاء النور؟
         </p>
-        <h1 className="mt-2 text-3xl font-bold tracking-tight sm:text-4xl">
-          CedarWatch Dashboard
+        <h1 className="font-display mt-3 max-w-xl text-4xl leading-tight sm:text-6xl">
+          The lights went out.
+          <span className="italic text-[#d4a017]"> Who saw it?</span>
         </h1>
-        <p className="mt-3 max-w-2xl text-emerald-100">
-          Track active electricity, internet, and water outages across Lebanon.
-          Reports from the community and monitoring agents are grouped and scored
-          for confidence.
+        <p className="mt-4 max-w-xl text-sm text-[#f3ead6]/80 sm:text-base">
+          CedarWatch is a neighborhood lookout for electricity, internet, and
+          water. Pin what you see. Confirm what your street already knows.
         </p>
-        <Link
-          to="/map"
-          className="mt-5 inline-flex items-center gap-2 rounded-lg bg-emerald-500 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-emerald-400"
-        >
-          View live map
-          <ArrowRight className="h-4 w-4" />
-        </Link>
-        <Link
-          to="/history"
-          className="mt-5 ml-3 inline-flex items-center gap-2 rounded-lg bg-white/10 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-white/20"
-        >
-          Outage history
-        </Link>
+        <div className="mt-6 flex flex-col gap-2 sm:flex-row sm:flex-wrap">
+          <Link to="/map" className="btn-primary">
+            Open the live map
+            <ArrowRight className="h-4 w-4" />
+          </Link>
+          <Link to="/history" className="btn-ghost">
+            Read the log
+          </Link>
+        </div>
       </section>
 
       {error && (
-        <p className="rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700">
+        <p className="rounded-xl bg-red-50 px-4 py-3 text-sm text-red-800">
           {error}. Start PostgreSQL and the Python API, then refresh.
         </p>
       )}
@@ -72,15 +71,18 @@ export default function DashboardPage() {
       <DashboardStats stats={stats} />
 
       <section>
-        <div className="mb-4 flex items-center justify-between">
-          <h2 className="text-xl font-semibold text-[var(--cedar-dark)]">
-            Active incidents
-          </h2>
+        <div className="mb-4 flex items-end justify-between gap-3">
+          <div>
+            <p className="stamp text-[var(--cedar-green)]">Now</p>
+            <h2 className="font-display mt-2 text-2xl text-[var(--cedar-dark)]">
+              Active field reports
+            </h2>
+          </div>
           <Link
             to="/map"
             className="text-sm font-medium text-[var(--cedar-green)] hover:underline"
           >
-            Report or view on map
+            Drop a pin
           </Link>
         </div>
         <IncidentList incidents={incidents} />

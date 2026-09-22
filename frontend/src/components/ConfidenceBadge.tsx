@@ -5,7 +5,7 @@ export function ConfidenceBadge({ level }: { level: ConfidenceLevel }) {
   const badge = CONFIDENCE_BADGE[level];
   return (
     <span
-      className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-medium ${badge.className}`}
+      className={`stamp ${badge.className}`}
     >
       {badge.label}
     </span>

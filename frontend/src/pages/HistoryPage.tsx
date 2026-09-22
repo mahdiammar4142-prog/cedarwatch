@@ -19,10 +19,11 @@ export default function HistoryPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-[var(--cedar-dark)]">
+            <p className="stamp text-[var(--cedar-green)]">The log</p>
+            <h1 className="font-display mt-2 text-3xl text-[var(--cedar-dark)] sm:text-4xl">
           Outage history
         </h1>
-        <p className="mt-1 text-slate-600">
+        <p className="mt-2 text-sm text-stone-600 sm:text-base">
           Past incidents, how long they lasted, and a simple reliability score
           by area.
         </p>

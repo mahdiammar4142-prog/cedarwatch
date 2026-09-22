@@ -6,45 +6,39 @@ const OUTAGE_TYPES: OutageType[] = ["ELECTRICITY", "INTERNET", "WATER"];
 export function DashboardStats({ stats }: { stats: Stats }) {
   return (
     <div className="space-y-6">
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <StatCard label="Active incidents" value={stats.activeIncidents} accent="bg-red-500" />
-        <StatCard label="Reports today" value={stats.totalReportsToday} accent="bg-blue-500" />
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <StatCard label="Live incidents" value={stats.activeIncidents} note="on the map" />
+        <StatCard label="Reports today" value={stats.totalReportsToday} note="from neighbors" />
+        <StatCard label="Areas hit" value={stats.affectedAreas.length} note="named places" />
         <StatCard
-          label="Affected areas"
-          value={stats.affectedAreas.length}
-          accent="bg-amber-500"
-        />
-        <StatCard
-          label="Confirmed outages"
+          label="Confirmed"
           value={stats.confidenceBreakdown.CONFIRMED}
-          accent="bg-emerald-600"
+          note="highest signal"
         />
       </div>
 
       <div className="grid gap-4 lg:grid-cols-2">
-        <section className="rounded-xl border border-emerald-900/10 bg-white p-5 shadow-sm">
-          <h2 className="font-semibold text-[var(--cedar-dark)]">Active by type</h2>
-          <ul className="mt-4 space-y-3">
+        <section className="panel p-5">
+          <h2 className="font-display text-xl text-[var(--cedar-dark)]">By current</h2>
+          <ul className="mt-4 space-y-2">
             {OUTAGE_TYPES.map((type) => (
               <li
                 key={type}
-                className="flex items-center justify-between rounded-lg bg-slate-50 px-4 py-3"
+                className="flex min-h-11 items-center justify-between rounded-2xl bg-[#f3ead6]/70 px-4 py-3"
               >
                 <span className="flex items-center gap-2 text-sm">
                   <span>{OUTAGE_ICONS[type]}</span>
                   {OUTAGE_LABELS[type]}
                 </span>
-                <span className="text-lg font-semibold">{stats.activeByType[type]}</span>
+                <span className="font-display text-2xl">{stats.activeByType[type]}</span>
               </li>
             ))}
           </ul>
         </section>
 
-        <section className="rounded-xl border border-emerald-900/10 bg-white p-5 shadow-sm">
-          <h2 className="font-semibold text-[var(--cedar-dark)]">
-            Confidence breakdown
-          </h2>
-          <ul className="mt-4 space-y-3">
+        <section className="panel p-5">
+          <h2 className="font-display text-xl text-[var(--cedar-dark)]">Confidence</h2>
+          <ul className="mt-4 space-y-2">
             {(
               Object.entries(stats.confidenceBreakdown) as [
                 keyof Stats["confidenceBreakdown"],
@@ -53,10 +47,10 @@ export function DashboardStats({ stats }: { stats: Stats }) {
             ).map(([level, count]) => (
               <li
                 key={level}
-                className="flex items-center justify-between rounded-lg bg-slate-50 px-4 py-3 text-sm"
+                className="flex items-center justify-between rounded-2xl bg-[#f3ead6]/70 px-4 py-3 text-sm"
               >
                 <span className="capitalize">{level.toLowerCase()}</span>
-                <span className="font-semibold">{count}</span>
+                <span className="font-display text-xl">{count}</span>
               </li>
             ))}
           </ul>
@@ -64,13 +58,13 @@ export function DashboardStats({ stats }: { stats: Stats }) {
       </div>
 
       {stats.affectedAreas.length > 0 && (
-        <section className="rounded-xl border border-emerald-900/10 bg-white p-5 shadow-sm">
-          <h2 className="font-semibold text-[var(--cedar-dark)]">Affected areas</h2>
+        <section className="panel p-5">
+          <h2 className="font-display text-xl text-[var(--cedar-dark)]">Places on the board</h2>
           <div className="mt-3 flex flex-wrap gap-2">
             {stats.affectedAreas.map((area) => (
               <span
                 key={area}
-                className="rounded-full bg-emerald-50 px-3 py-1 text-sm text-[var(--cedar-dark)]"
+                className="rounded-full border border-[var(--cedar-dark)]/15 bg-[#fffaf1] px-3 py-1 text-sm"
               >
                 {area}
               </span>
@@ -85,17 +79,17 @@ export function DashboardStats({ stats }: { stats: Stats }) {
 function StatCard({
   label,
   value,
-  accent,
+  note,
 }: {
   label: string;
   value: number;
-  accent: string;
+  note: string;
 }) {
   return (
-    <div className="rounded-xl border border-emerald-900/10 bg-white p-5 shadow-sm">
-      <div className={`mb-3 h-1 w-10 rounded-full ${accent}`} />
-      <p className="text-sm text-slate-600">{label}</p>
-      <p className="mt-1 text-3xl font-bold text-[var(--cedar-dark)]">{value}</p>
+    <div className="ticket px-4 py-5">
+      <p className="pl-3 text-xs uppercase tracking-[0.18em] text-stone-500">{label}</p>
+      <p className="font-display mt-1 pl-3 text-4xl text-[var(--cedar-dark)]">{value}</p>
+      <p className="pl-3 text-xs text-stone-500">{note}</p>
     </div>
   );
 }

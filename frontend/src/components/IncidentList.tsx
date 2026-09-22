@@ -20,7 +20,7 @@ export function IncidentList({
 }: IncidentListProps) {
   if (incidents.length === 0) {
     return (
-      <div className="rounded-xl border border-dashed border-slate-300 bg-white p-8 text-center text-slate-500">
+      <div className="panel p-8 text-center text-stone-500">
         {emptyLabel}
       </div>
     );
@@ -75,50 +75,61 @@ function IncidentCard({
   }
 
   return (
-    <article className="rounded-xl border border-emerald-900/10 bg-white p-4 shadow-sm">
+    <article className="ticket p-4 pl-5">
       <div className="flex flex-wrap items-center gap-2">
         <OutageTypeBadge type={incident.type} />
         <ConfidenceBadge level={incident.confidence} />
       </div>
-      <h3 className="mt-2 font-medium text-[var(--cedar-dark)]">
-        {incident.area ?? "Unknown area"}
+      <h3 className="font-display mt-2 text-xl text-[var(--cedar-dark)]">
+        {incident.area ?? incident.municipality ?? incident.district ?? "Unknown area"}
       </h3>
-      <dl className="mt-3 grid grid-cols-3 gap-2 text-center text-sm">
-        <div className="rounded-lg bg-slate-50 p-2">
-          <dt className="text-xs text-slate-500">Reports</dt>
+      {(incident.governorate || incident.district) && (
+        <p className="mt-1 text-sm text-stone-600">
+          {[incident.district, incident.governorate].filter(Boolean).join(" · ")}
+          {incident.municipality ? ` · ${incident.municipality}` : ""}
+        </p>
+      )}
+      <dl className="mt-3 grid grid-cols-3 gap-1 text-center text-xs sm:gap-2 sm:text-sm">
+        <div className="rounded-2xl bg-[#f3ead6]/80 p-2">
+          <dt className="text-[10px] text-stone-500 sm:text-xs">Reports</dt>
           <dd className="font-semibold">{incident.reportCount}</dd>
         </div>
-        <div className="rounded-lg bg-slate-50 p-2">
-          <dt className="text-xs text-slate-500">Confirmations</dt>
+        <div className="rounded-2xl bg-[#f3ead6]/80 p-2">
+          <dt className="text-[10px] text-stone-500 sm:text-xs">Confirmations</dt>
           <dd className="font-semibold">{incident.confirmationCount}</dd>
         </div>
-        <div className="rounded-lg bg-slate-50 p-2">
-          <dt className="text-xs text-slate-500">Agents</dt>
+        <div className="rounded-2xl bg-[#f3ead6]/80 p-2">
+          <dt className="text-[10px] text-stone-500 sm:text-xs">Agents</dt>
           <dd className="font-semibold">{incident.agentFailureCount}</dd>
         </div>
       </dl>
-      <p className="mt-2 text-xs text-slate-500">
+      <p className="mt-2 text-xs text-stone-500">
         Started {new Date(incident.startedAt).toLocaleString()}
       </p>
       {showActions && (onConfirm || onResolve) && incident.status === "ACTIVE" && (
-        <div className="mt-3 grid gap-2 sm:grid-cols-2">
+        <div className="mt-3 grid gap-2">
           {onConfirm && (
             <button
               onClick={handleConfirm}
               disabled={loading !== null}
-              className="rounded-lg border border-[var(--cedar-green)] px-3 py-2 text-sm font-medium text-[var(--cedar-green)] transition hover:bg-emerald-50 disabled:opacity-60"
+              className="min-h-11 rounded-full border border-[var(--cedar-green)] px-3 py-2 text-sm font-medium text-[var(--cedar-green)] disabled:opacity-60"
             >
               {loading === "confirm" ? "Confirming..." : "I can confirm this"}
             </button>
           )}
-          {onResolve && (
+          {onResolve && incident.canResolve && (
             <button
               onClick={handleResolve}
               disabled={loading !== null}
-              className="rounded-lg border border-slate-300 px-3 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50 disabled:opacity-60"
+              className="min-h-11 rounded-full border border-stone-300 px-3 py-2 text-sm font-medium disabled:opacity-60"
             >
               {loading === "resolve" ? "Updating..." : "Service is back"}
             </button>
+          )}
+          {onResolve && !incident.canResolve && (
+            <p className="text-xs text-stone-500">
+              Only someone who reported this outage can mark Service is back.
+            </p>
           )}
         </div>
       )}

@@ -1,3 +1,4 @@
+import { LocateFixed } from "lucide-react";
 import { useEffect, useState } from "react";
 import {
   CircleMarker,
@@ -18,6 +19,7 @@ import {
   type MapLanguage,
 } from "../lib/constants";
 import { ConfidenceBadge } from "./ConfidenceBadge";
+import { getCurrentLocation } from "../lib/geo";
 
 interface OutageMapProps {
   incidents: Incident[];
@@ -62,6 +64,8 @@ export function OutageMap({
     const stored = localStorage.getItem(MAP_LANGUAGE_KEY);
     return stored === "en" || stored === "ar" ? stored : "ar";
   });
+  const [locating, setLocating] = useState(false);
+  const [locateError, setLocateError] = useState<string | null>(null);
   const tiles = MAP_TILES[language];
 
   useEffect(() => {
@@ -83,8 +87,35 @@ export function OutageMap({
   }, []);
 
   return (
-    <div className="relative h-[500px] w-full overflow-hidden rounded-xl border border-emerald-900/10 shadow-sm">
-      <div className="absolute right-3 top-3 z-[1000] flex overflow-hidden rounded-lg border border-emerald-900/10 bg-white text-sm shadow-sm">
+    <div className="relative h-[min(55vh,420px)] min-h-[260px] w-full overflow-hidden rounded-[1.25rem] border-4 border-[var(--cedar-dark)] shadow-[8px_10px_0_rgba(16,38,26,0.12)] sm:h-[500px] sm:min-h-0">
+      <button
+        type="button"
+        aria-label="Use my current location"
+        disabled={locating}
+        onClick={async () => {
+          setLocateError(null);
+          setLocating(true);
+          try {
+            const pos = await getCurrentLocation();
+            onMapClick?.(pos.lat, pos.lng);
+          } catch (err) {
+            setLocateError(
+              err instanceof Error ? err.message : "Could not get your location"
+            );
+          } finally {
+            setLocating(false);
+          }
+        }}
+        className="absolute left-2 top-2 z-[1000] inline-flex min-h-11 min-w-11 items-center justify-center rounded-full border border-emerald-900/10 bg-white text-[var(--cedar-dark)] shadow-sm disabled:opacity-60 sm:left-3 sm:top-3"
+      >
+        <LocateFixed className={`h-5 w-5 ${locating ? "animate-pulse" : ""}`} />
+      </button>
+      {locateError && (
+        <p className="absolute bottom-2 left-2 right-2 z-[1000] rounded-xl bg-[#fffaf1] px-3 py-2 text-xs text-red-800 shadow sm:left-3 sm:right-3">
+          {locateError}
+        </p>
+      )}
+      <div className="absolute right-2 top-2 z-[1000] flex overflow-hidden rounded-lg border border-emerald-900/10 bg-white text-xs shadow-sm sm:right-3 sm:top-3 sm:text-sm">
         <button
           type="button"
           onClick={() => setLanguage("en")}
@@ -138,7 +169,12 @@ export function OutageMap({
                 <p className="font-semibold">
                   {OUTAGE_LABELS[incident.type]} outage
                 </p>
-                <p className="text-sm">{incident.area ?? "Unknown area"}</p>
+                <p className="text-sm">{incident.area ?? incident.municipality ?? "Unknown area"}</p>
+                {(incident.district || incident.governorate) && (
+                  <p className="text-xs text-slate-600">
+                    {[incident.district, incident.governorate].filter(Boolean).join(" · ")}
+                  </p>
+                )}
                 <ConfidenceBadge level={incident.confidence} />
                 <p className="text-xs text-slate-600">
                   {incident.reportCount} reports · {incident.confirmationCount}{" "}

@@ -41,6 +41,9 @@ class Report(Base):
     longitude: Mapped[float] = mapped_column(Float, nullable=False)
     area: Mapped[str | None] = mapped_column(String(255), nullable=True)
     description: Mapped[str | None] = mapped_column(String(2000), nullable=True)
+    governorate: Mapped[str | None] = mapped_column(String(80), nullable=True)
+    district: Mapped[str | None] = mapped_column(String(80), nullable=True)
+    municipality: Mapped[str | None] = mapped_column(String(120), nullable=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now()
     )
@@ -82,6 +85,9 @@ class Incident(Base):
     latitude: Mapped[float] = mapped_column(Float, nullable=False)
     longitude: Mapped[float] = mapped_column(Float, nullable=False)
     area: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    governorate: Mapped[str | None] = mapped_column(String(80), nullable=True)
+    district: Mapped[str | None] = mapped_column(String(80), nullable=True)
+    municipality: Mapped[str | None] = mapped_column(String(120), nullable=True)
     confidence: Mapped[ConfidenceLevel] = mapped_column(
         Enum(ConfidenceLevel, values_callable=enum_values, native_enum=False),
         default=ConfidenceLevel.UNVERIFIED,
@@ -121,6 +127,21 @@ class Agent(Base):
     )
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now()
+    )
+
+
+class Profile(Base):
+    __tablename__ = "profiles"
+
+    user_id: Mapped[str] = mapped_column(String(255), primary_key=True)
+    display_name: Mapped[str | None] = mapped_column(String(80), nullable=True)
+    area: Mapped[str | None] = mapped_column(String(80), nullable=True)
+    bio: Mapped[str | None] = mapped_column(String(280), nullable=True)
+    email: Mapped[str | None] = mapped_column(String(255), nullable=True, index=True)
+    is_admin: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    avatar_filename: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
     )
 
 
