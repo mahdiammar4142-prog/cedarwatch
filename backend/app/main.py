@@ -2,6 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
+from app.auth import warmup_jwks
 from app.config import settings
 from app.database import Base, engine
 from app.migrate import ensure_auth_columns
@@ -11,6 +12,7 @@ from app.storage import UPLOADS_DIR
 
 Base.metadata.create_all(bind=engine)
 ensure_auth_columns()
+warmup_jwks()
 
 app = FastAPI(
     title="CedarWatch API",
@@ -44,4 +46,4 @@ app.mount("/uploads", StaticFiles(directory=str(UPLOADS_DIR)), name="uploads")
 
 @app.get("/api/health")
 def health():
-    return {"status": "ok"}
+    return {"status": "ok", "auth": warmup_jwks()}

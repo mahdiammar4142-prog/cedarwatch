@@ -1,16 +1,19 @@
 from dataclasses import dataclass
-from functools import lru_cache
+import json
+import os
 import threading
+import urllib.request
 
 import jwt
 from fastapi import Depends, HTTPException
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
-from jwt import InvalidTokenError, PyJWKClient
+from jwt import InvalidTokenError, PyJWK
 
 from app.config import settings
 
 bearer = HTTPBearer(auto_error=False)
 _jwks_lock = threading.Lock()
+_jwks_cache: dict | None = None
 
 
 @dataclass
@@ -19,40 +22,72 @@ class CurrentUser:
     email: str | None
 
 
-@lru_cache(maxsize=1)
-def _jwks_client() -> PyJWKClient | None:
-    if not settings.supabase_url:
-        return None
-    url = f"{settings.supabase_url.rstrip('/')}/auth/v1/.well-known/jwks.json"
-    return PyJWKClient(url, cache_keys=True, timeout=10)
+def _supabase_base() -> str:
+    url = (
+        settings.supabase_url
+        or os.environ.get("SUPABASE_URL")
+        or os.environ.get("VITE_SUPABASE_URL")
+        or ""
+    ).strip().rstrip("/")
+    if url.endswith("/auth/v1"):
+        url = url[: -len("/auth/v1")]
+    return url
+
+
+def _load_jwks() -> dict:
+    global _jwks_cache
+    if _jwks_cache is not None:
+        return _jwks_cache
+    base = _supabase_base()
+    if not base:
+        raise InvalidTokenError("Supabase URL is not configured")
+    jwks_url = f"{base}/auth/v1/.well-known/jwks.json"
+    request = urllib.request.Request(
+        jwks_url,
+        headers={"Accept": "application/json", "User-Agent": "cedarwatch-api"},
+    )
+    with urllib.request.urlopen(request, timeout=10) as response:
+        payload = json.loads(response.read().decode("utf-8"))
+    if not isinstance(payload, dict) or not payload.get("keys"):
+        raise InvalidTokenError("Supabase JWKS was empty")
+    _jwks_cache = payload
+    return payload
+
+
+def warmup_jwks() -> str:
+    try:
+        with _jwks_lock:
+            keys = _load_jwks().get("keys", [])
+        return f"ok:{len(keys)}"
+    except Exception as exc:
+        return f"error:{type(exc).__name__}"
 
 
 def _decode_token(token: str) -> dict:
-    jwks = _jwks_client()
-    if jwks is not None:
-        try:
-            with _jwks_lock:
-                signing_key = jwks.get_signing_key_from_jwt(token)
-            return jwt.decode(
-                token,
-                signing_key.key,
-                algorithms=["ES256", "RS256"],
-                audience="authenticated",
-            )
-        except (InvalidTokenError, TimeoutError, OSError, Exception):
-            pass
-
-    if settings.supabase_jwt_secret and not settings.supabase_jwt_secret.startswith(
-        "sb_secret_"
-    ):
+    header = jwt.get_unverified_header(token)
+    kid = header.get("kid")
+    with _jwks_lock:
+        jwks = _load_jwks()
+    jwk = next((item for item in jwks.get("keys", []) if item.get("kid") == kid), None)
+    if jwk is None:
+        raise InvalidTokenError("No matching Supabase signing key")
+    key = PyJWK.from_dict(jwk).key
+    try:
         return jwt.decode(
             token,
-            settings.supabase_jwt_secret,
-            algorithms=["HS256"],
+            key,
+            algorithms=["ES256", "RS256"],
             audience="authenticated",
+            leeway=60,
         )
-
-    raise InvalidTokenError("Could not verify Supabase token")
+    except InvalidTokenError:
+        return jwt.decode(
+            token,
+            key,
+            algorithms=["ES256", "RS256"],
+            options={"verify_aud": False},
+            leeway=60,
+        )
 
 
 def get_current_user(
@@ -61,7 +96,7 @@ def get_current_user(
     user = get_optional_user(credentials)
     if user is None:
         if credentials is None:
-            if not settings.supabase_url and not settings.supabase_jwt_secret:
+            if not _supabase_base() and not settings.supabase_jwt_secret:
                 raise HTTPException(
                     status_code=503,
                     detail="Supabase auth is not configured. Set SUPABASE_URL.",
@@ -75,8 +110,6 @@ def get_optional_user(
     credentials: HTTPAuthorizationCredentials | None = Depends(bearer),
 ) -> CurrentUser | None:
     if credentials is None:
-        return None
-    if not settings.supabase_url and not settings.supabase_jwt_secret:
         return None
     try:
         payload = _decode_token(credentials.credentials)
