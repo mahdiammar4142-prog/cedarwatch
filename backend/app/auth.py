@@ -30,9 +30,10 @@ def _supabase_base() -> str:
         or os.environ.get("VITE_SUPABASE_URL")
         or ""
     ).strip().rstrip("/")
-    if url.endswith("/auth/v1"):
-        url = url[: -len("/auth/v1")]
-    return url
+    for suffix in ("/rest/v1", "/auth/v1"):
+        if url.endswith(suffix):
+            url = url[: -len(suffix)]
+    return url.rstrip("/")
 
 
 def _load_jwks() -> dict:
